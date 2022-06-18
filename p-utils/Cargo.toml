@@ -1,0 +1,37 @@
+[package]
+name = "p-utils"
+version = "0.2.0"
+edition = "2021"
+authors = ["1379 <EternalNightYeah2@yeah.net>"]
+description = "utils of 1379-server"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["std"]
+random = ["rand"]
+std = []
+base64 = []
+crypto = ["base64", "random"]
+
+log = [] # 待开发
+
+[dependencies]
+rand = { version = "0.8.4", optional = true, features = ["small_rng"] }
+
+[dev-dependencies]
+# Todo
+[target.'cfg(unix)'.dependencies]
+# Todo
+#[workspace]
+#members = ["examples"]
+
+[[example]]
+name = "std"
+required-features = ["std", "random"]
+[[example]]
+name = "base64"
+required-features = ["base64"]
+[[example]]
+name = "random"
+required-features = ["random"]
