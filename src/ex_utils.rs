@@ -14,13 +14,13 @@ macro_rules! error { ($($x:tt)*) => (::log::error!($($x)*)) }
 /// fn main() {
 /// output!("hello world");
 /// 输出 [>] 😵 hello world 🐢
-/// 
+///
 /// output!(1;2;34; 5);
 /// 输出 [>] 😵 hello world 🐢
-/// 
+///
 /// let list = [1,2,34,5];
 /// 输出 [>] 😵 12345 🐢
-/// 
+///
 /// output!("{:#?}",list);
 /// 输出 [>] 😵 [
 /// 1,
