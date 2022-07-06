@@ -24,11 +24,16 @@ pub fn compress_dir(
         zipfile,
         level,
         permissions,
-        CompressionMethod::Bzip2,
+        match &*method {
+            ".zip" => CompressionMethod::Deflated,
+            ".bz2" => CompressionMethod::Bzip2,
+            ".zst" => CompressionMethod::Zstd,
+            _ => CompressionMethod::Deflated,
+        },
     )?;
     Ok(())
 }
-/// 压缩文件夹
+/// 压缩文件
 pub fn compress_file(
     src_file: &Path,
     dst: &Path,
@@ -47,8 +52,13 @@ pub fn compress_file(
         zipfile,
         level,
         permissions,
-        CompressionMethod::Bzip2,
-    );
+        match &*method {
+            ".zip" => CompressionMethod::Deflated,
+            ".bz2" => CompressionMethod::Bzip2,
+            ".zst" => CompressionMethod::Zstd,
+            _ => CompressionMethod::Deflated,
+        },
+    )?;
     Ok(())
 }
 
@@ -92,13 +102,13 @@ pub fn zip_extract(src_zip: &Path, mut dst: &Path) {
     let zipfile = fs::File::open(&src_zip).unwrap();
     let mut zip = zip::ZipArchive::new(zipfile).unwrap();
     if !dst.exists() {
-        fs::create_dir_all(dst).map_err(|e| {
+        let _ = fs::create_dir_all(dst).map_err(|e| {
             println!("{}", e);
         });
     }
     for i in 0..zip.len() {
         let mut file = zip.by_index(i).unwrap();
-        println!("Filename: {} {:?}", file.name(), file.sanitized_name());
+        println!("Filename: {} {:?}", file.name(), file.mangled_name());
         if file.is_dir() {
             println!("file utf8 path {:?}", file.name_raw());
             let dst = dst.join(Path::new(&file.name().replace("\\", "")));
@@ -106,12 +116,12 @@ pub fn zip_extract(src_zip: &Path, mut dst: &Path) {
         } else {
             let file_path = dst.join(Path::new(file.name()));
             let mut dst_file = if !file_path.exists() {
-                println!("file path {}", file_path.to_str().unwrap());
+                println!("sfile path {}", file_path.to_str().unwrap());
                 fs::File::create(file_path).unwrap()
             } else {
                 fs::File::open(file_path).unwrap()
             };
-            io::copy(&mut file, &mut dst_file);
+            let _ = io::copy(&mut file, &mut dst_file);
         }
     }
 }

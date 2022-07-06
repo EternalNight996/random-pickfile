@@ -1,9 +1,11 @@
 use config::{self, Config, ConfigError, FileFormat};
+use once_cell::sync::Lazy;
 use serde_derive::Deserialize;
 
+pub static SETTINGS: Lazy<Settings> = Lazy::new(|| get_setting().unwrap());
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct SettingsDir {
-    pub pick_count: f32,
+    pub pick_count: usize,
     pub name: String,
     pub date: String,
     pub workspace: String,
@@ -18,14 +20,12 @@ pub struct SettingsDir {
 pub struct SettingsFile {
     pub is_rename: bool,
     pub filetypes: String,
-    pub is_compress: bool,
-    pub is_save_compress_dir: bool,
-    pub compress_level: i32,
-    pub compress_permissions: u32,
-    pub compress_method: String,
 }
 #[derive(Debug, Deserialize, PartialEq)]
-pub struct SettingsMain {}
+pub struct SettingsMain {
+    pub thread: usize,
+    pub cpu_core: usize,
+}
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Settings {
     pub dir: SettingsDir,
