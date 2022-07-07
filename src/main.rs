@@ -55,8 +55,12 @@ impl Data {
             DIR_SUFFIX_FLAG
         );
         x.file_type = serde_json::from_str::<Vec<String>>(&SETTINGS.file.filetypes).unwrap();
-        let (a, b, c) =
-            block_on(get_dir_file(&SETTINGS.dir.workspace, x.file_type.clone())).unwrap();
+        let (a, b, c) = block_on(get_dir_file(
+            &SETTINGS.dir.workspace,
+            x.file_type.clone(),
+            true,
+        ))
+        .unwrap();
         x.suffix_flag_dir_count = a;
         x.file_count = b.len();
         x.file_list = b;
@@ -241,6 +245,7 @@ async fn main() -> Result<(), Error> {
 pub async fn get_dir_file(
     workspace: &str,
     file_type: Vec<String>,
+    is_random: bool,
 ) -> Result<(usize, Vec<(usize, PathBuf)>, Vec<PathBuf>), Error> {
     let mut res: (usize, Vec<(usize, PathBuf)>, Vec<PathBuf>) = (0, vec![], vec![]);
     let mut entries = fs::read_dir(workspace).await?;
@@ -265,14 +270,38 @@ pub async fn get_dir_file(
             res.2.push(entry.path());
         }
     }
+    if is_random {
+        {
+            let tries = (res.1.len() as f64 / 2.0) as usize;
+            for i in 0..tries {
+                let end = res.1.len();
+                let index = random!(0..end);
+                let cp = res.1[index].clone();
+                res.1[index] = res.1[i].clone();
+                res.1[i] = cp;
+            }
+        }
+        {
+            let tries = (res.2.len() as f64 / 2.0) as usize;
+            for i in 0..tries {
+                let end = res.2.len();
+                let index = random!(0..end);
+                let cp = res.2[index].clone();
+                res.2[index] = res.2[i].clone();
+                res.2[i] = cp;
+            }
+        }
+    }
     Ok(res)
 }
+
 /// 移动文件
 pub async fn move_file_fn(from: PathBuf, to: &PathBuf) -> Result<(), Error> {
     println!("from: {} -> to: {}", from.display(), to.display());
     fs::rename(from.clone(), to).await?;
     Ok(())
 }
+
 /// 创建文件夹
 pub async fn create_dir_fn(dst_path: &PathBuf) -> Result<(), Error> {
     if !dst_path.exists() {
@@ -281,6 +310,7 @@ pub async fn create_dir_fn(dst_path: &PathBuf) -> Result<(), Error> {
     }
     Ok(())
 }
+
 /// zip压缩
 async fn zip_compress_dir(
     src_dir: &PathBuf,
@@ -309,10 +339,12 @@ async fn zip_compress_dir(
         }
     }
 }
+
 /// 检查安全文件
 fn check_safety_lock() -> bool {
     Path::new("./.lock").exists()
 }
+
 /// 创建安全文件
 async fn create_safety_lock() -> Result<fs::File, Error> {
     let p = Path::new("./.lock");
@@ -322,6 +354,8 @@ async fn create_safety_lock() -> Result<fs::File, Error> {
         .open(p)
         .await
 }
+
+/// 移除安全锁
 async fn remove_safety_lock() -> Result<(), Error> {
     fs::remove_file(Path::new("./.lock")).await
 }
