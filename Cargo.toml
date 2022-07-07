@@ -1,6 +1,6 @@
 [package]
 name = "random-pickfile"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "GNU-3"
 authors = ["1379", "EternalNightYeah2@yeah.net"]
