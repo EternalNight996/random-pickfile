@@ -8,17 +8,18 @@ mod p_settings;
 mod p_zip;
 
 use chrono::Local;
-use futures::{executor::block_on, future::join_all};
+use futures::future::join_all;
 use once_cell::sync::Lazy;
 use p_settings::SETTINGS;
 use p_utils::random;
 use std::{
+    fs,
     io::ErrorKind,
     path::{self, Path, PathBuf},
     time::Instant,
 };
 
-use tokio::{fs, io::Error, sync::mpsc};
+use tokio::{io::Error, sync::mpsc};
 // 判断系统路径类型
 const PATH_KEY: char = if cfg!(windows) { '\\' } else { '/' };
 // 特殊的标识，方便去重
@@ -79,7 +80,7 @@ async fn main() -> Result<(), Error> {
             "进程已经在运行中, 请删除.lock文件后, 尝试执行",
         ));
     } else {
-        let _r = create_safety_lock().await;
+        let _r = create_safety_lock();
         // 初始化数据
         println!("finding filetype -> {:?}", (&*DATA).file_type);
         if (&*DATA).file_list.len() > 0 {
@@ -164,7 +165,6 @@ async fn main() -> Result<(), Error> {
                                 SETTINGS.dir.is_save_compress_dir,
                                 SETTINGS.dir.compress_method.clone()
                             )
-                            .await
                         );
                     }
                     // 发送完成指令
@@ -218,7 +218,6 @@ async fn main() -> Result<(), Error> {
                                     SETTINGS.dir.is_save_compress_dir,
                                     SETTINGS.dir.compress_method.clone()
                                 )
-                                .await
                             );
                             if dir_count > SETTINGS.main.thread {
                                 cp_tx.send(i).await.unwrap();
@@ -234,7 +233,7 @@ async fn main() -> Result<(), Error> {
     }
     println!("expend -> {:?}ms", instant.elapsed().as_millis());
     println!("trying remove lock of file");
-    remove_safety_lock().await?;
+    remove_safety_lock()?;
     Ok(())
 }
 
@@ -296,21 +295,21 @@ pub fn get_dir_file(
 /// 移动文件
 pub async fn move_file_fn(from: PathBuf, to: &PathBuf) -> Result<(), Error> {
     println!("from: {} -> to: {}", from.display(), to.display());
-    fs::rename(from.clone(), to).await?;
+    fs::rename(from.clone(), to)?;
     Ok(())
 }
 
 /// 创建文件夹
 pub async fn create_dir_fn(dst_path: &PathBuf) -> Result<(), Error> {
     if !dst_path.exists() {
-        fs::create_dir(dst_path).await?;
+        fs::create_dir(dst_path)?;
         println!("成功创建文件夹: {}", dst_path.display());
     }
     Ok(())
 }
 
 /// zip压缩
-async fn zip_compress_dir(
+fn zip_compress_dir(
     src_dir: &PathBuf,
     dst_dir: &PathBuf,
     level: i32,
@@ -331,7 +330,7 @@ async fn zip_compress_dir(
         Ok(_) => {
             // 判断是否移除源文件
             if !src_keep {
-                let _ = block_on(fs::remove_dir_all(src_dir));
+                let _ = fs::remove_dir_all(src_dir);
             }
             format!("Successful compress zip -> {}", dst_dir.display())
         }
@@ -343,17 +342,13 @@ fn check_safety_lock() -> bool {
     Path::new("./.lock").exists()
 }
 
-/// 创建安全文件
-async fn create_safety_lock() -> Result<fs::File, Error> {
+/// 创建安全文
+fn create_safety_lock() -> Result<fs::File, Error> {
     let p = Path::new("./.lock");
-    fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(p)
-        .await
+    fs::OpenOptions::new().write(true).create_new(true).open(p)
 }
 
 /// 移除安全锁
-async fn remove_safety_lock() -> Result<(), Error> {
-    fs::remove_file(Path::new("./.lock")).await
+fn remove_safety_lock() -> Result<(), Error> {
+    fs::remove_file(Path::new("./.lock"))
 }
