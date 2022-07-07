@@ -55,12 +55,9 @@ impl Data {
             DIR_SUFFIX_FLAG
         );
         x.file_type = serde_json::from_str::<Vec<String>>(&SETTINGS.file.filetypes).unwrap();
-        let (a, b, c) = block_on(get_dir_file(
-            &SETTINGS.dir.workspace,
-            x.file_type.clone(),
-            true,
-        ))
-        .unwrap();
+        println!("1");
+        let (a, b, c) = get_dir_file(&SETTINGS.dir.workspace, x.file_type.clone(), true).unwrap();
+        println!("2");
         x.suffix_flag_dir_count = a;
         x.file_count = b.len();
         x.file_list = b;
@@ -242,20 +239,21 @@ async fn main() -> Result<(), Error> {
 }
 
 /// 获取目标目录数据
-pub async fn get_dir_file(
+pub fn get_dir_file(
     workspace: &str,
     file_type: Vec<String>,
     is_random: bool,
 ) -> Result<(usize, Vec<(usize, PathBuf)>, Vec<PathBuf>), Error> {
     let mut res: (usize, Vec<(usize, PathBuf)>, Vec<PathBuf>) = (0, vec![], vec![]);
-    let mut entries = fs::read_dir(workspace).await?;
-    while let Some(entry) = entries.try_next().await? {
+    for entry in std::fs::read_dir(workspace)? {
+        let entry = entry?;
         let pathbuf = entry.path();
         let fname = pathbuf
             .file_name()
             .and_then(|x| x.to_str())
             .unwrap_or("")
             .to_string();
+        println!("path {:?} ", pathbuf);
         if fname.contains(DIR_SUFFIX_FLAG) {
             res.0 += 1;
         }
