@@ -8,7 +8,7 @@ mod p_settings;
 mod p_zip;
 
 use chrono::Local;
-use futures::{executor::block_on, future::join_all, TryStreamExt};
+use futures::{executor::block_on, future::join_all};
 use once_cell::sync::Lazy;
 use p_settings::SETTINGS;
 use p_utils::random;
